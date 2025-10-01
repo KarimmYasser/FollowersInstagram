@@ -9,7 +9,9 @@ on:
 jobs:
   build-and-release:
     runs-on: windows-latest
-
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -150,7 +152,6 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
