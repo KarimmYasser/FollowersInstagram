@@ -26,25 +26,25 @@ jobs:
 
       - name: Test GUI imports
         run: |
-          python -c "import tkinter; print('✅ tkinter available')"
-          python -c "import json; print('✅ json available')"
-          python -c "import threading; print('✅ threading available')"
-          python -c "import pathlib; print('✅ pathlib available')"
+          python -c "import tkinter; print('[OK] tkinter available')"
+          python -c "import json; print('[OK] json available')"
+          python -c "import threading; print('[OK] threading available')"
+          python -c "import pathlib; print('[OK] pathlib available')"
 
       - name: Validate Python syntax
         run: |
           python -m py_compile script.py
           python -m py_compile gui.py
-          echo "✅ All Python files have valid syntax"
+          echo "[OK] All Python files have valid syntax"
 
       - name: Test build process
         run: |
           pyinstaller --onefile --windowed --name "Instagram_Followers_Analyzer_Test" gui.py
           if (Test-Path "dist\Instagram_Followers_Analyzer_Test.exe") {
             $size = (Get-Item "dist\Instagram_Followers_Analyzer_Test.exe").Length
-            echo "✅ Executable built successfully - Size: $([math]::Round($size/1MB, 2)) MB"
+            echo "[OK] Executable built successfully - Size: $([math]::Round($size/1MB, 2)) MB"
           } else {
-            echo "❌ Executable build failed"
+            echo "[ERROR] Executable build failed"
             exit 1
           }
 
