@@ -119,12 +119,33 @@ jobs:
           $escaped_notes = $notes -replace "`r`n", "%0A" -replace "`n", "%0A"
           echo "notes=$escaped_notes" >> $env:GITHUB_OUTPUT
 
+      - name: Verify release files
+        run: |
+          $version = "${{ steps.get_version.outputs.version }}"
+          echo "Checking release files..."
+          if (Test-Path "dist\Instagram_Followers_Analyzer.exe") {
+            $size = (Get-Item "dist\Instagram_Followers_Analyzer.exe").Length
+            echo "[OK] EXE file found - Size: $([math]::Round($size/1MB, 2)) MB"
+          } else {
+            echo "[ERROR] EXE file not found!"
+            exit 1
+          }
+          if (Test-Path "Instagram_Followers_Analyzer_v$version.zip") {
+            $size = (Get-Item "Instagram_Followers_Analyzer_v$version.zip").Length
+            echo "[OK] ZIP file found - Size: $([math]::Round($size/1MB, 2)) MB"
+          } else {
+            echo "[ERROR] ZIP file not found!"
+            exit 1
+          }
+          echo "All release files verified successfully!"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: "Instagram Followers Analyzer v${{ steps.get_version.outputs.version }}"
           body_path: release_notes.md
           files: |
+            dist/Instagram_Followers_Analyzer.exe
             Instagram_Followers_Analyzer_v${{ steps.get_version.outputs.version }}.zip
           draft: false
           prerelease: false
