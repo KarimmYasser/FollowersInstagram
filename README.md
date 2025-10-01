@@ -90,6 +90,6 @@ The application will show:
 
 ---
 
-**Version**: 1.0  
+**Version**: 1.0.2
 **Platform**: Windows  
 **License**: Free for personal use
