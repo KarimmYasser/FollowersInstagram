@@ -1,0 +1,143 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*" # Triggers on version tags like v1.0.0, v2.1.3, etc.
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11" # Use a stable Python version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          pyinstaller --onefile --windowed --name "Instagram_Followers_Analyzer" gui.py
+
+      - name: Create release directory
+        run: |
+          New-Item -ItemType Directory -Force -Path "release-package"
+          Copy-Item "dist\Instagram_Followers_Analyzer.exe" "release-package\"
+          Copy-Item "release\README.md" "release-package\" -ErrorAction SilentlyContinue
+
+      - name: Create release README if missing
+        run: |
+          if (-not (Test-Path "release-package\README.md")) {
+            @"
+          # Instagram Followers Analyzer
+
+          A Windows desktop application that analyzes your Instagram followers and following data to identify who is not following you back.
+
+          ## Quick Start
+          1. Download your Instagram data (JSON format)
+          2. Run Instagram_Followers_Analyzer.exe
+          3. Select your followers and following JSON files
+          4. Click "Analyze Followers"
+
+          ## Features
+          - User-friendly GUI interface
+          - Local processing (your data stays private)
+          - Detailed analysis with statistics
+          - No installation required
+
+          ## System Requirements
+          - Windows 7 or later
+          - No additional software needed
+
+          For detailed instructions, visit: https://github.com/${{ github.repository }}
+          "@ | Out-File -FilePath "release-package\README.md" -Encoding UTF8
+          }
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          $version = "${{ github.ref_name }}"
+          if ($version.StartsWith("v")) {
+            $version = $version.Substring(1)
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Version: $version"
+
+      - name: Create ZIP archive
+        run: |
+          $version = "${{ steps.get_version.outputs.version }}"
+          Compress-Archive -Path "release-package\*" -DestinationPath "Instagram_Followers_Analyzer_v$version.zip"
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          $version = "${{ steps.get_version.outputs.version }}"
+          $notes = @"
+          ## Instagram Followers Analyzer v$version
+
+          ### 📦 What's Included
+          - **Instagram_Followers_Analyzer.exe** - Standalone Windows application
+          - **README.md** - Complete usage instructions
+
+          ### 🚀 Features
+          - **Easy-to-use GUI** - No command line needed
+          - **Privacy-focused** - All processing happens locally on your computer
+          - **No installation required** - Just download and run
+          - **Comprehensive analysis** - Shows who's not following you back with statistics
+
+          ### 💻 System Requirements
+          - Windows 7 or later
+          - No Python or additional software required
+
+          ### 🔧 How to Use
+          1. Download the ZIP file below
+          2. Extract all files to a folder
+          3. Double-click **Instagram_Followers_Analyzer.exe**
+          4. Follow the on-screen instructions
+
+          ### 📥 Download
+          Download the **Instagram_Followers_Analyzer_v$version.zip** file from the Assets section below.
+
+          ---
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/v$([version]::new('$version').Major).$([version]::new('$version').Minor).0...${{ github.ref_name }}
+          "@
+
+          # Write to file for GitHub release
+          $notes | Out-File -FilePath "release_notes.md" -Encoding UTF8
+
+          # Set as output (escape newlines for GitHub Actions)
+          $escaped_notes = $notes -replace "`r`n", "%0A" -replace "`n", "%0A"
+          echo "notes=$escaped_notes" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Instagram Followers Analyzer v${{ steps.get_version.outputs.version }}"
+          body_path: release_notes.md
+          files: |
+            Instagram_Followers_Analyzer_v${{ steps.get_version.outputs.version }}.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: instagram-followers-analyzer-v${{ steps.get_version.outputs.version }}
+          path: |
+            release-package/
+            Instagram_Followers_Analyzer_v${{ steps.get_version.outputs.version }}.zip
+          retention-days: 90

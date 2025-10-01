@@ -1,0 +1,56 @@
+name: Build Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Test GUI imports
+        run: |
+          python -c "import tkinter; print('✅ tkinter available')"
+          python -c "import json; print('✅ json available')"
+          python -c "import threading; print('✅ threading available')"
+          python -c "import pathlib; print('✅ pathlib available')"
+
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile script.py
+          python -m py_compile gui.py
+          echo "✅ All Python files have valid syntax"
+
+      - name: Test build process
+        run: |
+          pyinstaller --onefile --windowed --name "Instagram_Followers_Analyzer_Test" gui.py
+          if (Test-Path "dist\Instagram_Followers_Analyzer_Test.exe") {
+            $size = (Get-Item "dist\Instagram_Followers_Analyzer_Test.exe").Length
+            echo "✅ Executable built successfully - Size: $([math]::Round($size/1MB, 2)) MB"
+          } else {
+            echo "❌ Executable build failed"
+            exit 1
+          }
+
+      - name: Upload test build
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-build-${{ github.sha }}
+          path: dist/Instagram_Followers_Analyzer_Test.exe
+          retention-days: 7
