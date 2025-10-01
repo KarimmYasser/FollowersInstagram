@@ -1,3 +1,9 @@
+---
+noteId: "f1eb52009e6211f0bf08015dc43b887d"
+tags: []
+
+---
+
 # Instagram Followers Analyzer
 
 A Windows desktop application that analyzes your Instagram followers and following data to identify who is not following you back.
