@@ -109,7 +109,7 @@ jobs:
 
           ---
 
-          **Full Changelog**: https://github.com/${{ github.repository }}/compare/v$([version]::new('$version').Major).$([version]::new('$version').Minor).0...${{ github.ref_name }}
+          **Full Changelog**: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
           "@
 
           # Write to file for GitHub release
