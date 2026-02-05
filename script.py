@@ -1,27 +1,53 @@
 import json
 
 # Replace with actual paths
-FOLLOWERS_FILE = 'followers_1.json'
-FOLLOWING_FILE = 'following.json'
+FOLLOWERS_FILE = 'connections/followers_and_following/followers_1.json'
+FOLLOWING_FILE = 'connections/followers_and_following/following.json'
+
+def extract_username(data_entry):
+    """Extract username from string_list_data entry.
+    Can handle both formats:
+    - {value: "username", ...}
+    - {href: "https://www.instagram.com/_u/username", ...}
+    """
+    # First try to get the value field directly
+    if "value" in data_entry:
+        return data_entry["value"]
+    
+    # If not, try to extract from href
+    href = data_entry.get("href", "")
+    if href:
+        # Handle both URL formats
+        if "/_u/" in href:
+            return href.split('/_u/')[-1]
+        else:
+            # Format: https://www.instagram.com/username
+            return href.split('/')[-1]
+    
+    return None
 
 def load_followers(path):
     with open(path, 'r', encoding='utf-8') as file:
         data = json.load(file)
-        return [
-            entry["string_list_data"][0]["value"]
-            for entry in data
-            if "string_list_data" in entry and entry["string_list_data"]
-        ]
+        usernames = []
+        for entry in data:
+            if "string_list_data" in entry and entry["string_list_data"]:
+                username = extract_username(entry["string_list_data"][0])
+                if username:
+                    usernames.append(username)
+        return usernames
 
 def load_following(path):
     with open(path, 'r', encoding='utf-8') as file:
         data = json.load(file)
         following_data = data.get("relationships_following", [])
-        return [
-            entry["string_list_data"][0]["value"]
-            for entry in following_data
-            if "string_list_data" in entry and entry["string_list_data"]
-        ]
+        usernames = []
+        for entry in following_data:
+            if "string_list_data" in entry and entry["string_list_data"]:
+                username = extract_username(entry["string_list_data"][0])
+                if username:
+                    usernames.append(username)
+        return usernames
 
 def main():
     followers = load_followers(FOLLOWERS_FILE)

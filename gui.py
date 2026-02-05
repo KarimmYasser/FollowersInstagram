@@ -182,26 +182,52 @@ class InstagramFollowersGUI:
         messagebox.showerror("Analysis Error", error_msg)
         self.update_status("Analysis failed - check your files and try again")
     
+    def extract_username(self, data_entry):
+        """Extract username from string_list_data entry.
+        Can handle both formats:
+        - {value: "username", ...}
+        - {href: "https://www.instagram.com/_u/username", ...}
+        """
+        # First try to get the value field directly
+        if "value" in data_entry:
+            return data_entry["value"]
+        
+        # If not, try to extract from href
+        href = data_entry.get("href", "")
+        if href:
+            # Handle both URL formats
+            if "/_u/" in href:
+                return href.split('/_u/')[-1]
+            else:
+                # Format: https://www.instagram.com/username
+                return href.split('/')[-1]
+        
+        return None
+    
     def load_followers(self, path):
         """Load followers from JSON file"""
         with open(path, 'r', encoding='utf-8') as file:
             data = json.load(file)
-            return [
-                entry["string_list_data"][0]["value"]
-                for entry in data
-                if "string_list_data" in entry and entry["string_list_data"]
-            ]
+            usernames = []
+            for entry in data:
+                if "string_list_data" in entry and entry["string_list_data"]:
+                    username = self.extract_username(entry["string_list_data"][0])
+                    if username:
+                        usernames.append(username)
+            return usernames
     
     def load_following(self, path):
         """Load following from JSON file"""
         with open(path, 'r', encoding='utf-8') as file:
             data = json.load(file)
             following_data = data.get("relationships_following", [])
-            return [
-                entry["string_list_data"][0]["value"]
-                for entry in following_data
-                if "string_list_data" in entry and entry["string_list_data"]
-            ]
+            usernames = []
+            for entry in following_data:
+                if "string_list_data" in entry and entry["string_list_data"]:
+                    username = self.extract_username(entry["string_list_data"][0])
+                    if username:
+                        usernames.append(username)
+            return usernames
 
 def main():
     root = tk.Tk()
